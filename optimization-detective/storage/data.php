@@ -6,9 +6,11 @@
  * @since 0.1.0
  */
 
+// @codeCoverageIgnoreStart
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
+// @codeCoverageIgnoreEnd
 
 /**
  * Gets the freshness age (TTL) for a given URL Metric.
@@ -75,11 +77,6 @@ function od_get_normalized_query_vars(): array {
 		$normalized_query_vars = array(
 			'error' => 404,
 		);
-	}
-
-	// Vary URL Metrics by whether the user is logged in since additional elements may be present.
-	if ( is_user_logged_in() ) {
-		$normalized_query_vars['user_logged_in'] = true;
 	}
 
 	return $normalized_query_vars;
@@ -203,6 +200,7 @@ function od_get_current_url_metrics_etag( OD_Tag_Visitor_Registry $tag_visitor_r
 	}
 
 	$data = array(
+		'xpath_version'    => 2, // Bump whenever a major change to the XPath format occurs so that new URL Metrics are proactively gathered.
 		'tag_visitors'     => array_keys( iterator_to_array( $tag_visitor_registry ) ),
 		'queried_object'   => $queried_object_data,
 		'queried_posts'    => array_filter(
