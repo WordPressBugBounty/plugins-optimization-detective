@@ -23,6 +23,7 @@ class OD_URL_Metrics_Post_Type {
 	/**
 	 * Post type slug.
 	 *
+	 * @since 0.1.0
 	 * @var string
 	 */
 	const SLUG = 'od_url_metrics';
@@ -30,6 +31,7 @@ class OD_URL_Metrics_Post_Type {
 	/**
 	 * Event name (hook) for garbage collection of stale URL Metrics posts.
 	 *
+	 * @since 0.1.0
 	 * @var string
 	 */
 	const GC_CRON_EVENT_NAME = 'od_url_metrics_gc';
@@ -37,6 +39,7 @@ class OD_URL_Metrics_Post_Type {
 	/**
 	 * Recurrence for garbage collection of stale URL Metrics posts.
 	 *
+	 * @since 0.1.0
 	 * @var string
 	 */
 	const GC_CRON_RECURRENCE = 'daily';
@@ -84,7 +87,7 @@ class OD_URL_Metrics_Post_Type {
 	 *
 	 * @since 0.1.0
 	 *
-	 * @param string $slug URL Metrics slug.
+	 * @param non-empty-string $slug URL Metrics slug.
 	 * @return WP_Post|null Post object if exists.
 	 */
 	public static function get_post( string $slug ): ?WP_Post {
@@ -202,9 +205,9 @@ class OD_URL_Metrics_Post_Type {
 	 * @since 0.1.0
 	 * @todo There is duplicate logic here with od_handle_rest_request().
 	 *
-	 * @param string        $slug           Slug (hash of normalized query vars).
-	 * @param OD_URL_Metric $new_url_metric New URL Metric.
-	 * @return int|WP_Error Post ID or WP_Error otherwise.
+	 * @param non-empty-string $slug Slug (hash of normalized query vars).
+	 * @param OD_URL_Metric    $new_url_metric New URL Metric.
+	 * @return positive-int|WP_Error Post ID or WP_Error otherwise.
 	 */
 	public static function store_url_metric( string $slug, OD_URL_Metric $new_url_metric ) {
 		$post_data = array(
@@ -226,13 +229,6 @@ class OD_URL_Metrics_Post_Type {
 		}
 
 		$etag = $new_url_metric->get_etag();
-		if ( null === $etag ) {
-			// This case actually will never occur in practice because the store_url_metric function is only called
-			// in the REST API endpoint where the ETag parameter is required. It is here exclusively for the sake of
-			// PHPStan's static analysis. This entire condition can be removed in a future release when the 'etag'
-			// property becomes required.
-			return new WP_Error( 'missing_etag' );
-		}
 
 		$group_collection = new OD_URL_Metric_Group_Collection(
 			$url_metrics,
@@ -250,13 +246,8 @@ class OD_URL_Metrics_Post_Type {
 		}
 
 		$post_data['post_content'] = wp_json_encode(
-			array_map(
-				static function ( OD_URL_Metric $url_metric ): array {
-					return $url_metric->jsonSerialize();
-				},
-				$group_collection->get_flattened_url_metrics()
-			),
-			JSON_UNESCAPED_SLASHES // No need for escaped slashes since not printed to frontend.
+			$group_collection->get_flattened_url_metrics(),
+			JSON_UNESCAPED_SLASHES // No need for escaping slashes since this JSON is not embedded in HTML.
 		);
 		if ( ! is_string( $post_data['post_content'] ) ) {
 			return new WP_Error( 'json_encode_error', json_last_error_msg() );
